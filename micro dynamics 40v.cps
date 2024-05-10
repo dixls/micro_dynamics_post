@@ -220,6 +220,13 @@ properties = {
     type: "boolean",
     value: true,
     scope: "post"
+  },
+  checkToolLength: {
+    title: "Check tool length",
+    description: "Set to false if you do not want tools to be checked"
+    type: "boolean",
+    value: true,
+    scope: "post"
   }
 };
 
@@ -1390,6 +1397,9 @@ function onSection() {
     writeBlock("T" + toolFormat.format(tool.number), mFormat.format(6));
     if (tool.comment) {
       writeComment(tool.comment);
+    }
+    if (getProperty("checkToolLength")) {
+      onCommand(COMMAND_TOOL_MEASURE);
     }
     var showToolZMin = false;
     if (showToolZMin) {
@@ -2946,7 +2956,7 @@ function onCommand(command) {
     
       writeBlock(
         gFormat.format(65),
-        "P" + 9866,
+        "P" + 9858,
         "T" + toolFormat.format(tool.number),
         "B" + xyzFormat.format(0),
         "H" + xyzFormat.format(getProperty("toolBreakageTolerance"))
@@ -2955,6 +2965,34 @@ function onCommand(command) {
     }
     return;
   case COMMAND_TOOL_MEASURE:
+    onCommand(COMMAND_STOP_SPINDLE);
+    setCoolant(COOLANT_OFF);
+
+    var retract = false;
+    if (currentSection.isMultiAxis()) {
+      if (getCurrentDirection().length != 0) {
+        retract = true;
+      }
+    } else if ((currentWorkPlaneABC != undefined) && (currentWorkPlaneABC.length != 0)) {
+      retract = true;
+    }
+    if (retract) { // move to safe position
+      writeRetract(Z);
+    }
+
+    setWorkPlane(new Vector(0, 0, 0));
+
+    writeBlock(
+      gFormat.format(65),
+      "P" + 9921,
+      mFormat.format(21),
+      "C" + xyzFormat.format(0)
+    );
+    writeBlock(
+      gFormat.format(28),
+      gFormat.format(91),
+      "Z" + xyzFormant.format(0)
+    );
     return;
   }
   
